@@ -44,7 +44,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	optinode "github.com/celestiaorg/optimint/node"
+	rollnode "github.com/celestiaorg/rollmint/node"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -164,7 +164,7 @@ type (
 		ValAddress sdk.ValAddress
 		RPCClient  tmclient.Client
 
-		tmNode  *optinode.Node
+		tmNode  *rollnode.Node
 		api     *api.Server
 		grpc    *grpc.Server
 		grpcWeb *http.Server

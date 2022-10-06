@@ -38,10 +38,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	opticonf "github.com/celestiaorg/optimint/config"
-	opticonv "github.com/celestiaorg/optimint/conv"
-	optinode "github.com/celestiaorg/optimint/node"
-	optirpc "github.com/celestiaorg/optimint/rpc"
+	rollconf "github.com/celestiaorg/rollmint/config"
+	rollconv "github.com/celestiaorg/rollmint/conv"
+	rollnode "github.com/celestiaorg/rollmint/node"
+	rollrpc "github.com/celestiaorg/rollmint/rpc"
 )
 
 const (
@@ -196,7 +196,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 
 	// add support for all Tendermint-specific command line options
 	tcmd.AddNodeFlags(cmd)
-	opticonf.AddFlags(cmd)
+	rollconf.AddFlags(cmd)
 	return cmd
 }
 
@@ -305,7 +305,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 
 	var (
 		tmNode   tmservice.Service
-		server   *optirpc.Server
+		server   *rollrpc.Server
 		gRPCOnly = ctx.Viper.GetBool(flagGRPCOnly)
 	)
 
@@ -313,34 +313,34 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 		ctx.Logger.Info("starting node in gRPC only mode; Tendermint is disabled")
 		config.GRPC.Enable = true
 	} else {
-		ctx.Logger.Info("starting node with ABCI Optimint in-process")
+		ctx.Logger.Info("starting node with rollmint in-process")
 
 		nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 		if err != nil {
 			return err
 		}
 		pval := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
-		// keys in optimint format
-		p2pKey, err := opticonv.GetNodeKey(nodeKey)
+		// keys in rollmint format
+		p2pKey, err := rollconv.GetNodeKey(nodeKey)
 		if err != nil {
 			return err
 		}
-		signingKey, err := opticonv.GetNodeKey(&p2p.NodeKey{PrivKey: pval.Key.PrivKey})
+		signingKey, err := rollconv.GetNodeKey(&p2p.NodeKey{PrivKey: pval.Key.PrivKey})
 		if err != nil {
 			return err
 		}
 
-		nodeConfig := opticonf.NodeConfig{}
+		nodeConfig := rollconf.NodeConfig{}
 		err = nodeConfig.GetViperConfig(ctx.Viper)
 		if err != nil {
 			return err
 		}
-		opticonv.GetNodeConfig(&nodeConfig, cfg)
-		err = opticonv.TranslateAddresses(&nodeConfig)
+		rollconv.GetNodeConfig(&nodeConfig, cfg)
+		err = rollconv.TranslateAddresses(&nodeConfig)
 		if err != nil {
 			return err
 		}
-		tmNode, err := optinode.NewNode(
+		tmNode, err := rollnode.NewNode(
 			context.Background(),
 			nodeConfig,
 			p2pKey,
@@ -353,7 +353,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 			return err
 		}
 
-		server := optirpc.NewServer(tmNode, cfg.RPC, ctx.Logger)
+		server := rollrpc.NewServer(tmNode, cfg.RPC, ctx.Logger)
 		err = server.Start()
 		if err != nil {
 			return err

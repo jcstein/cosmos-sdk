@@ -23,10 +23,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
-	opticonf "github.com/celestiaorg/optimint/config"
-	opticonv "github.com/celestiaorg/optimint/conv"
-	optinode "github.com/celestiaorg/optimint/node"
-	optirpc "github.com/celestiaorg/optimint/rpc"
+	rollconf "github.com/celestiaorg/rollmint/config"
+	rollconv "github.com/celestiaorg/rollmint/conv"
+	rollnode "github.com/celestiaorg/rollmint/node"
+	rollrpc "github.com/celestiaorg/rollmint/rpc"
 )
 
 func startInProcess(cfg Config, val *Validator) error {
@@ -43,12 +43,12 @@ func startInProcess(cfg Config, val *Validator) error {
 		return err
 	}
 	pval := privval.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile())
-	// keys in optimint format
-	p2pKey, err := opticonv.GetNodeKey(nodeKey)
+	// keys in rollmint format
+	p2pKey, err := rollconv.GetNodeKey(nodeKey)
 	if err != nil {
 		return err
 	}
-	signingKey, err := opticonv.GetNodeKey(&p2p.NodeKey{PrivKey: pval.Key.PrivKey})
+	signingKey, err := rollconv.GetNodeKey(&p2p.NodeKey{PrivKey: pval.Key.PrivKey})
 	if err != nil {
 		return err
 	}
@@ -60,19 +60,19 @@ func startInProcess(cfg Config, val *Validator) error {
 		return err
 	}
 
-	nodeConfig := opticonf.NodeConfig{}
+	nodeConfig := rollconf.NodeConfig{}
 	err = nodeConfig.GetViperConfig(val.Ctx.Viper)
 	nodeConfig.Aggregator = true
 	nodeConfig.DALayer = "mock"
 	if err != nil {
 		return err
 	}
-	opticonv.GetNodeConfig(&nodeConfig, tmCfg)
-	err = opticonv.TranslateAddresses(&nodeConfig)
+	rollconv.GetNodeConfig(&nodeConfig, tmCfg)
+	err = rollconv.TranslateAddresses(&nodeConfig)
 	if err != nil {
 		return err
 	}
-	val.tmNode, err = optinode.NewNode(
+	val.tmNode, err = rollnode.NewNode(
 		context.Background(),
 		nodeConfig,
 		p2pKey,
@@ -90,7 +90,7 @@ func startInProcess(cfg Config, val *Validator) error {
 	}
 
 	if val.RPCAddress != "" {
-		server := optirpc.NewServer(val.tmNode, tmCfg.RPC, logger)
+		server := rollrpc.NewServer(val.tmNode, tmCfg.RPC, logger)
 		err = server.Start()
 		if err != nil {
 			return err
