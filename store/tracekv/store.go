@@ -18,9 +18,7 @@ const (
 	iterValueOp operation = "iterValue"
 )
 
-var (
-	ErrBufferEmpty = errors.New("provided buffer is empty")
-)
+var ErrBufferEmpty = errors.New("provided buffer is empty")
 
 type (
 	// Store implements the KVStore interface with tracing enabled.

@@ -13,9 +13,7 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
-var (
-	ErrMoreThanOneBlockTypeUsed = errors.New("fraudProof has more than one type of fradulent state transitions marked nil")
-)
+var ErrMoreThanOneBlockTypeUsed = errors.New("fraudProof has more than one type of fradulent state transitions marked nil")
 
 // Represents a single-round fraudProof
 type FraudProof struct {
@@ -63,7 +61,6 @@ func convertToProofOps(existenceProofs []*ics23.ExistenceProof) []*tmcrypto.Proo
 		proofOps = append(proofOps, getProofOp(existenceProof))
 	}
 	return proofOps
-
 }
 
 func getProofOp(exist *ics23.ExistenceProof) *tmcrypto.ProofOp {
@@ -106,6 +103,8 @@ func (fraudProof *FraudProof) getModules() []string {
 	return keys
 }
 
+// Returns a map from storeKey to IAVL Deep Subtrees which have witness data and
+// initial root hash initialized from fraud proof
 func (fraudProof *FraudProof) getDeepIAVLTrees() (map[string]*iavl.DeepSubTree, error) {
 	storeKeyToIAVLTree := make(map[string]*iavl.DeepSubTree)
 	for storeKey, stateWitness := range fraudProof.stateWitness {
@@ -144,11 +143,13 @@ func (fraudProof *FraudProof) checkFraudulentStateTransition() bool {
 	return fraudProof.fraudulentEndBlock != nil
 }
 
+// Performs fraud proof verification on a store and substore level
 func (fraudProof *FraudProof) verifyFraudProof() (bool, error) {
 	if !fraudProof.checkFraudulentStateTransition() {
 		return false, ErrMoreThanOneBlockTypeUsed
 	}
 	for storeKey, stateWitness := range fraudProof.stateWitness {
+		// Fraudproof verification on a store level
 		proofOp := stateWitness.Proof
 		proof, err := types.CommitmentOpDecoder(proofOp)
 		if err != nil {

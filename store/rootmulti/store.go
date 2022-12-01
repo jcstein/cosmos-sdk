@@ -196,7 +196,6 @@ func (rs *Store) LoadLatestVersion() error {
 }
 
 func (rs *Store) LoadLastVersion() error {
-
 	if rs.lastCommitInfo.GetVersion() == 0 {
 		// This case means that no commit has been made in the store, so
 		// there is no last version.
