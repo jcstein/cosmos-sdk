@@ -1,7 +1,6 @@
 package baseapp
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -17,9 +16,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
-	iavl "github.com/cosmos/cosmos-sdk/store/iavl"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -851,7 +848,7 @@ func makeABCIData(msgResponses []*codectypes.Any) ([]byte, error) {
 }
 
 // Generate a fraudproof for an app with the given trace buffers
-func (app *BaseApp) getFraudProof(storeKeyToTraceBuf map[string]*bytes.Buffer) (FraudProof, error) {
+func (app *BaseApp) getFraudProof(storeKeyToWitnessData map[string][]iavltree.WitnessData) (FraudProof, error) {
 	fraudProof := FraudProof{}
 	fraudProof.stateWitness = make(map[string]StateWitness)
 	fraudProof.blockHeight = app.LastBlockHeight()
@@ -862,10 +859,7 @@ func (app *BaseApp) getFraudProof(storeKeyToTraceBuf map[string]*bytes.Buffer) (
 		return FraudProof{}, err
 	}
 	fraudProof.appHash = appHash
-	nameToStoreKey := cms.StoreKeysByName()
-	for storeKeyName, traceBuf := range storeKeyToTraceBuf {
-		storeKey := nameToStoreKey[storeKeyName]
-		keys := cms.GetKVStore(storeKey).(*tracekv.Store).GetAllKeysUsedInTrace(*traceBuf)
+	for storeKeyName, _ := range storeKeyToWitnessData {
 		iavlStore, err := cms.GetIAVLStore(storeKeyName)
 		if err != nil {
 			return FraudProof{}, err
@@ -884,9 +878,10 @@ func (app *BaseApp) getFraudProof(storeKeyToTraceBuf map[string]*bytes.Buffer) (
 		stateWitness := StateWitness{
 			Proof:       *proof,
 			RootHash:    rootHash,
-			WitnessData: make([]WitnessData, 0),
+			WitnessData: make([]*WitnessData, 0),
 		}
-		populateStateWitness(&stateWitness, iavlStore, keys.Values())
+		iavlWitnessData := storeKeyToWitnessData[storeKeyName]
+		populateStateWitness(&stateWitness, iavlWitnessData)
 		fraudProof.stateWitness[storeKeyName] = stateWitness
 	}
 
@@ -894,27 +889,16 @@ func (app *BaseApp) getFraudProof(storeKeyToTraceBuf map[string]*bytes.Buffer) (
 }
 
 // populates the given state witness using traced keys and underlying iavl store
-func populateStateWitness(stateWitness *StateWitness, iavlStore *iavl.Store, tracedKeys []string) {
-	for _, key := range tracedKeys {
-		bKey := []byte(key)
-		has := iavlStore.Has(bKey)
-		if has {
-			bVal := iavlStore.Get(bKey)
-			proof := iavlStore.GetProofFromTree(bKey)
-			witnessData := WitnessData{bKey, bVal, proof.GetOps()[0]}
-			stateWitness.WitnessData = append(stateWitness.WitnessData, witnessData)
-		} else {
-			dstProof := iavlStore.GetDSTNonExistenceProofFromDeepSubTree(bKey)
-			witnesses := iavlStore.DSTNonExistenceProofToWitnesses(dstProof)
-			for _, witness := range witnesses {
-				if witness != nil {
-					bKey := witness.Key
-					bVal := iavlStore.Get(bKey)
-					witnessData := WitnessData{bKey, bVal, *witness}
-					stateWitness.WitnessData = append(stateWitness.WitnessData, witnessData)
-				}
-			}
+func populateStateWitness(stateWitness *StateWitness, iavlWitnessData []iavltree.WitnessData) {
+	for _, iavlTraceOp := range iavlWitnessData {
+		proofOps := convertToProofOps(iavlTraceOp.Proofs)
+		witnessData := WitnessData{
+			Operation: iavlTraceOp.Operation,
+			Key:       iavlTraceOp.Key,
+			Value:     iavlTraceOp.Value,
+			Proofs:    proofOps,
 		}
+		stateWitness.WitnessData = append(stateWitness.WitnessData, &witnessData)
 	}
 }
 

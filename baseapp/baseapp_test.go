@@ -2312,10 +2312,6 @@ func TestGenerateAndLoadFraudProof(t *testing.T) {
 		4. Bad block, fraud proof needed, fraud proof works, chain halts (happy case)
 	*/
 
-	storeTraceBuf := &bytes.Buffer{}
-	subStoreTraceBuf1 := &bytes.Buffer{}
-	subStoreTraceBuf2 := &bytes.Buffer{}
-
 	routerOpt := func(bapp *BaseApp) {
 		bapp.Router().AddRoute(sdk.NewRoute(routeMsgKeyValue, func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 			kv := msg.(*msgKeyValue)
@@ -2328,9 +2324,6 @@ func TestGenerateAndLoadFraudProof(t *testing.T) {
 	appB1 := setupBaseApp(t,
 		routerOpt,
 	)
-	appB1.SetCommitMultiStoreTracer(storeTraceBuf)
-	appB1.SetCommitKVStoreTracer(capKey1.Name(), subStoreTraceBuf1)
-	appB1.SetCommitKVStoreTracer(capKey2.Name(), subStoreTraceBuf2)
 
 	// B1 <- S0
 	appB1.InitChain(abci.RequestInitChain{})
@@ -2367,7 +2360,8 @@ func TestGenerateAndLoadFraudProof(t *testing.T) {
 
 	// Light Client
 	fraudProof := FraudProof{}
-	fraudProof.fromABCI(*resp.FraudProof)
+	err = fraudProof.fromABCI(*resp.FraudProof)
+	require.Nil(t, err)
 	require.Equal(t, appHashB1, fraudProof.appHash)
 	fraudProofVerified, err := fraudProof.verifyFraudProof()
 	require.Nil(t, err)
@@ -2390,10 +2384,6 @@ func TestGenerateAndLoadFraudProof(t *testing.T) {
 }
 
 func TestABCIEndToEndFraudProof(t *testing.T) {
-	storeTraceBuf := &bytes.Buffer{}
-	subStoreTraceBuf1 := &bytes.Buffer{}
-	subStoreTraceBuf2 := &bytes.Buffer{}
-
 	routerOpt := func(bapp *BaseApp) {
 		bapp.Router().AddRoute(sdk.NewRoute(routeMsgKeyValue, func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 			kv := msg.(*msgKeyValue)
@@ -2406,9 +2396,6 @@ func TestABCIEndToEndFraudProof(t *testing.T) {
 	appB1 := setupBaseApp(t,
 		routerOpt,
 	)
-	appB1.SetCommitMultiStoreTracer(storeTraceBuf)
-	appB1.SetCommitKVStoreTracer(capKey1.Name(), subStoreTraceBuf1)
-	appB1.SetCommitKVStoreTracer(capKey2.Name(), subStoreTraceBuf2)
 
 	// B1 <- S0
 	appB1.InitChain(abci.RequestInitChain{})

@@ -1,7 +1,6 @@
 package rootmulti
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -203,7 +202,6 @@ func (rs *Store) LoadLastVersion() error {
 		// there is no last version.
 		return fmt.Errorf("no previous commit found")
 	}
-	rs.ResetAllTraceWriters()
 	lastVersion := rs.lastCommitInfo.GetVersion()
 	return rs.loadVersion(lastVersion, nil)
 }
@@ -375,43 +373,29 @@ func (rs *Store) SetTracer(w io.Writer) types.MultiStore {
 	return rs
 }
 
-// SetTracerFor sets the tracer for a particular underlying store in the
-// Multistore that it will utilize to trace operations. A MultiStore is returned.
-func (rs *Store) SetTracerFor(skey string, w io.Writer) types.MultiStore {
-	key := rs.keysByName[skey]
-	storeParams := rs.storesParams[key]
-	storeParams.traceWriter = w
-	rs.storesParams[key] = storeParams
-	return rs
-}
-
-// GetTracerFor gets the tracer for a particular underlying store in the
-// Multistore that it will utilize to trace operations. A MultiStore is returned.
-func (rs *Store) GetTracerBufferFor(skey string) *bytes.Buffer {
-	key := rs.keysByName[skey]
-	storeParams, exists := rs.storesParams[key]
-	if exists {
-		buf, ok := storeParams.traceWriter.(*bytes.Buffer)
-		if ok {
-			return buf
+// SetTracer sets the tracer for the MultiStore that the underlying
+// stores will utilize to trace operations.
+func (rs *Store) SetTracingEnabledAll(tracingEnabled bool) error {
+	for skey := range rs.keysByName {
+		iavlStore, err := rs.GetIAVLStore(skey)
+		if err != nil {
+			return err
 		}
+		iavlStore.SetTracingEnabled(tracingEnabled)
 	}
 	return nil
 }
 
-func (rs *Store) ResetAllTraceWriters() {
-	buf, ok := rs.traceWriter.(*bytes.Buffer)
-	if ok {
-		buf.Reset()
-	}
-	for _, storeParams := range rs.storesParams {
-		if storeParams.traceWriter != nil {
-			buf, ok := storeParams.traceWriter.(*bytes.Buffer)
-			if ok {
-				buf.Reset()
-			}
+func (rs *Store) GetWitnessDataMap() (map[string][]iavltree.WitnessData, error) {
+	storeKeyToWitnessData := make(map[string][]iavltree.WitnessData)
+	for skey := range rs.keysByName {
+		iavlStore, err := rs.GetIAVLStore(skey)
+		if err != nil {
+			return nil, err
 		}
+		storeKeyToWitnessData[skey] = iavlStore.GetWitnessData()
 	}
+	return storeKeyToWitnessData, nil
 }
 
 // SetTracingContext updates the tracing context for the MultiStore by merging
@@ -505,7 +489,6 @@ func (rs *Store) Commit() types.CommitID {
 	}
 	// reset the removalMap
 	rs.removalMap = make(map[types.StoreKey]bool)
-	rs.ResetAllTraceWriters()
 
 	if err := rs.handlePruning(version); err != nil {
 		panic(err)

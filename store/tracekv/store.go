@@ -1,14 +1,12 @@
 package tracekv
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/chrispappas/golang-generics-set/set"
 	"github.com/cosmos/cosmos-sdk/store/types"
 )
 
@@ -95,28 +93,6 @@ func (tkv *Store) Iterator(start, end []byte) types.Iterator {
 // ReverseIterator call to the parent KVStore.
 func (tkv *Store) ReverseIterator(start, end []byte) types.Iterator {
 	return tkv.iterator(start, end, false)
-}
-
-// GetAllKeysUsedInTrace reads through all traced operations and returns
-// a set of all the keys inside the trace operations
-func (tkv *Store) GetAllKeysUsedInTrace(buf bytes.Buffer) set.Set[string] {
-
-	keys := make(set.Set[string], 0)
-	for {
-		traceOp, err := readOperation(&buf)
-		// Reached end of buffer
-		if err == ErrBufferEmpty {
-			return keys
-		}
-		if err != nil {
-			panic(err)
-		}
-		key, err := base64.StdEncoding.DecodeString(traceOp.Key)
-		if err != nil {
-			panic(sdkerrors.Wrap(err, "failed to decode key read from buf"))
-		}
-		keys.Add(string(key))
-	}
 }
 
 // iterator facilitates iteration over a KVStore. It delegates the necessary
@@ -230,23 +206,4 @@ func writeOperation(w io.Writer, op operation, tc types.TraceContext, key, value
 	}
 
 	io.WriteString(w, "\n")
-}
-
-// readOperation reads a KVStore operation from the underlying buffer as
-// JSON-encoded data where the key/value pair is base64 encoded.
-func readOperation(r *bytes.Buffer) (*traceOperation, error) {
-	raw, err := r.ReadString('\n')
-	if raw == "" {
-		return nil, ErrBufferEmpty
-	}
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to read trace operation")
-	}
-	traceOp := traceOperation{}
-	err = json.Unmarshal([]byte(raw), &traceOp)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to deserialize trace operation")
-	}
-
-	return &traceOp, nil
 }
