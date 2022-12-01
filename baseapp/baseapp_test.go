@@ -2392,7 +2392,7 @@ func TestABCIEndToEndFraudProof(t *testing.T) {
 		}))
 	}
 
-	// BaseApp, B1 with no Tracing
+	// BaseApp, B1
 	appB1 := setupBaseApp(t,
 		routerOpt,
 	)
@@ -2444,6 +2444,7 @@ func TestABCIEndToEndFraudProof(t *testing.T) {
 	}
 	routerOpts[capKey2.Name()] = newRouterOpt
 	appB1.routerOpts = routerOpts
+
 	// Light Client
 	verifyResp := appB1.VerifyFraudProof(
 		abci.RequestVerifyFraudProof{

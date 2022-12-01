@@ -161,9 +161,9 @@ func (app *BaseApp) executeNonFraudulentTransactions(req abci.RequestGenerateFra
 }
 
 // GenerateFraudProof implements the ABCI application interface. The BaseApp reverts to
-// previous state, runs the given fraudulent state transition, and gets the trace representing
-// the operations that this state transition makes. It then uses this trace to filter and export
-// the pre-fraudulent state transition execution state of the BaseApp and generates a Fraud Proof
+// previous state, runs the given fraudulent state transition, and gets the traced witness data representing
+// the operations that this state transition makes. It then uses this traced witness data and
+// the pre-fraudulent execution state of the BaseApp to generates a Fraud Proof
 // representing it. It returns this generated Fraud Proof.
 func (app *BaseApp) GenerateFraudProof(req abci.RequestGenerateFraudProof) (res abci.ResponseGenerateFraudProof) {
 	// Revert app to previous state
@@ -252,14 +252,14 @@ func (app *BaseApp) VerifyFraudProof(req abci.RequestVerifyFraudProof) (res abci
 		panic(err)
 	}
 
-	// First two levels of verification
+	// Store and subtore level verification
 	success, err := fraudProof.verifyFraudProof()
 	if err != nil {
 		panic(err)
 	}
 
 	if success {
-		// Third level of verification
+		// State execution verification
 		options := make([]func(*BaseApp), 0)
 		if app.routerOpts != nil {
 			for _, routerOpt := range app.routerOpts {
@@ -292,7 +292,6 @@ func (app *BaseApp) VerifyFraudProof(req abci.RequestVerifyFraudProof) (res abci
 			appFromFraudProof.BeginBlock(*fraudProof.fraudulentBeginBlock)
 		} else {
 			// Need to add some dummy begin block here since its a new app
-
 			appFromFraudProof.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: fraudProof.blockHeight}})
 			if fraudProof.fraudulentDeliverTx != nil {
 				resp := appFromFraudProof.DeliverTx(*fraudProof.fraudulentDeliverTx)

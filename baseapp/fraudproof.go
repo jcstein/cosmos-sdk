@@ -118,7 +118,7 @@ func (fraudProof *FraudProof) getDeepIAVLTrees() (map[string]*iavl.DeepSubTree, 
 			iavlWitnessData = append(
 				iavlWitnessData,
 				iavl.WitnessData{
-					Operation: iavl.Operation(witnessData.Operation),
+					Operation: witnessData.Operation,
 					Key:       witnessData.Key,
 					Value:     witnessData.Value,
 					Proofs:    existenceProofs,

@@ -888,7 +888,7 @@ func (app *BaseApp) getFraudProof(storeKeyToWitnessData map[string][]iavltree.Wi
 	return fraudProof, nil
 }
 
-// populates the given state witness using traced keys and underlying iavl store
+// populates the given state witness using the given witness data
 func populateStateWitness(stateWitness *StateWitness, iavlWitnessData []iavltree.WitnessData) {
 	for _, iavlTraceOp := range iavlWitnessData {
 		proofOps := convertToProofOps(iavlTraceOp.Proofs)
