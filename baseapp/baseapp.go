@@ -875,12 +875,12 @@ func (app *BaseApp) getFraudProof(storeKeyToWitnessData map[string][]iavltree.Wi
 		if err != nil {
 			return FraudProof{}, err
 		}
+		iavlWitnessData := storeKeyToWitnessData[storeKeyName]
 		stateWitness := StateWitness{
 			Proof:       *proof,
 			RootHash:    rootHash,
-			WitnessData: make([]*WitnessData, 0),
+			WitnessData: make([]*WitnessData, 0, len(iavlWitnessData)),
 		}
-		iavlWitnessData := storeKeyToWitnessData[storeKeyName]
 		populateStateWitness(&stateWitness, iavlWitnessData)
 		fraudProof.stateWitness[storeKeyName] = stateWitness
 	}
