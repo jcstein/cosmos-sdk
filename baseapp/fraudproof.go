@@ -22,7 +22,8 @@ type FraudProof struct {
 
 	// TODO: Add Proof that appHash is inside merklized ISRs in block header at block height
 
-	appHash []byte
+	preStateAppHash      []byte
+	expectedValidAppHash []byte
 	// A map from module name to state witness
 	stateWitness map[string]StateWitness
 
@@ -162,8 +163,8 @@ func (fraudProof *FraudProof) verifyFraudProof() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if !bytes.Equal(appHash[0], fraudProof.appHash) {
-			return false, fmt.Errorf("got appHash: %s, expected: %s", string(fraudProof.appHash), string(fraudProof.appHash))
+		if !bytes.Equal(appHash[0], fraudProof.preStateAppHash) {
+			return false, fmt.Errorf("got appHash: %s, expected: %s", string(fraudProof.preStateAppHash), string(fraudProof.preStateAppHash))
 		}
 
 		// Fraudproof verification on a substore level
@@ -238,7 +239,8 @@ func (fraudProof *FraudProof) toABCI() (*abci.FraudProof, error) {
 	}
 	return &abci.FraudProof{
 		BlockHeight:          fraudProof.blockHeight,
-		AppHash:              fraudProof.appHash,
+		PreStateAppHash:      fraudProof.preStateAppHash,
+		ExpectedValidAppHash: fraudProof.expectedValidAppHash,
 		StateWitness:         abciStateWitness,
 		FraudulentBeginBlock: fraudProof.fraudulentBeginBlock,
 		FraudulentDeliverTx:  fraudProof.fraudulentDeliverTx,
@@ -270,7 +272,8 @@ func (fraudProof *FraudProof) fromABCI(abciFraudProof abci.FraudProof) error {
 		}
 	}
 	fraudProof.blockHeight = abciFraudProof.BlockHeight
-	fraudProof.appHash = abciFraudProof.AppHash
+	fraudProof.preStateAppHash = abciFraudProof.PreStateAppHash
+	fraudProof.expectedValidAppHash = abciFraudProof.ExpectedValidAppHash
 	fraudProof.stateWitness = stateWitness
 	fraudProof.fraudulentBeginBlock = abciFraudProof.FraudulentBeginBlock
 	fraudProof.fraudulentDeliverTx = abciFraudProof.FraudulentDeliverTx

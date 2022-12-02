@@ -858,7 +858,7 @@ func (app *BaseApp) getFraudProof(storeKeyToWitnessData map[string][]iavltree.Wi
 	if err != nil {
 		return FraudProof{}, err
 	}
-	fraudProof.appHash = appHash
+	fraudProof.preStateAppHash = appHash
 	for storeKeyName := range storeKeyToWitnessData {
 		iavlStore, err := cms.GetIAVLStore(storeKeyName)
 		if err != nil {

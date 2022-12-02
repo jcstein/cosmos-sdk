@@ -281,7 +281,7 @@ func (app *BaseApp) VerifyFraudProof(req abci.RequestVerifyFraudProof) (res abci
 		appFromFraudProof.InitChain(abci.RequestInitChain{})
 		appHash := appFromFraudProof.GetAppHash(abci.RequestGetAppHash{}).AppHash
 
-		if !bytes.Equal(fraudProof.appHash, appHash) {
+		if !bytes.Equal(fraudProof.preStateAppHash, appHash) {
 			return abci.ResponseVerifyFraudProof{
 				Success: false,
 			}
@@ -304,7 +304,7 @@ func (app *BaseApp) VerifyFraudProof(req abci.RequestVerifyFraudProof) (res abci
 		}
 
 		appHash = appFromFraudProof.GetAppHash(abci.RequestGetAppHash{}).AppHash
-		success = bytes.Equal(appHash, req.ExpectedAppHash)
+		success = bytes.Equal(appHash, req.ExpectedValidAppHash)
 	}
 	res = abci.ResponseVerifyFraudProof{
 		Success: success,

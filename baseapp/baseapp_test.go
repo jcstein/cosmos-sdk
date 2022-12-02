@@ -2362,7 +2362,7 @@ func TestGenerateAndLoadFraudProof(t *testing.T) {
 	fraudProof := FraudProof{}
 	err = fraudProof.fromABCI(*resp.FraudProof)
 	require.Nil(t, err)
-	require.Equal(t, appHashB1, fraudProof.appHash)
+	require.Equal(t, appHashB1, fraudProof.preStateAppHash)
 	fraudProofVerified, err := fraudProof.verifyFraudProof()
 	require.Nil(t, err)
 	require.True(t, fraudProofVerified)
@@ -2448,8 +2448,8 @@ func TestABCIEndToEndFraudProof(t *testing.T) {
 	// Light Client
 	verifyResp := appB1.VerifyFraudProof(
 		abci.RequestVerifyFraudProof{
-			FraudProof:      generateResp.FraudProof,
-			ExpectedAppHash: appHashAfterFraud,
+			FraudProof:           generateResp.FraudProof,
+			ExpectedValidAppHash: appHashAfterFraud,
 		},
 	)
 	require.True(t, verifyResp.Success)
