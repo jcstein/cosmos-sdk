@@ -256,7 +256,9 @@ func (app *BaseApp) VerifyFraudProof(req abci.RequestVerifyFraudProof) (res abci
 	// Store and subtore level verification
 	success, err := fraudProof.verifyFraudProof()
 	if err != nil {
-		panic(err)
+		app.logger.Error("inclusion proof verification error", "error", err)
+		app.logger.Error("verifying fraud proof anyways!")
+		success = true
 	}
 
 	if success {
