@@ -31,10 +31,10 @@ import (
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 
-	rollconf "github.com/celestiaorg/rollmint/config"
-	rollconv "github.com/celestiaorg/rollmint/conv"
-	rollnode "github.com/celestiaorg/rollmint/node"
-	rollrpc "github.com/celestiaorg/rollmint/rpc"
+	rollconf "github.com/rollkit/rollkit/config"
+	rollconv "github.com/rollkit/rollkit/conv"
+	rollnode "github.com/rollkit/rollkit/node"
+	rollrpc "github.com/rollkit/rollkit/rpc"
 )
 
 const (
@@ -276,7 +276,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 
 	genDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
 	var (
-		tmNode   *rollnode.Node
+		tmNode   rollnode.Node
 		server   *rollrpc.Server
 		gRPCOnly = ctx.Viper.GetBool(flagGRPCOnly)
 	)
