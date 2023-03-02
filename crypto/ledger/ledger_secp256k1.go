@@ -1,10 +1,13 @@
 package ledger
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math/big"
 	"os"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
+	ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/pkg/errors"
 
 	tmbtcec "github.com/tendermint/btcd/btcec"
@@ -169,11 +172,23 @@ func warnIfErrors(f func() error) {
 }
 
 func convertDERtoBER(signatureDER []byte) ([]byte, error) {
-	sigDER, err := btcec.ParseDERSignature(signatureDER, btcec.S256())
+	sigDER, err := ecdsa.ParseDERSignature(signatureDER)
 	if err != nil {
 		return nil, err
 	}
-	sigBER := tmbtcec.Signature{R: sigDER.R, S: sigDER.S}
+	derSig := sigDER.Serialize()
+	var r, s btcec.ModNScalar
+	if r.SetByteSlice(derSig[:32]) {
+		return nil, errors.New("Cannot get field R of DER signature")
+	}
+	if s.SetByteSlice(derSig[32:]) {
+		return nil, errors.New("Cannot get field S of DER signature")
+	}
+
+	// forgive me for doing this
+	sigBER := tmbtcec.Signature{
+		R: big.NewInt(int64(binary.BigEndian.Uint64([]byte(r.String())))),
+		S: big.NewInt(int64(binary.BigEndian.Uint64([]byte(s.String()))))}
 	return sigBER.Serialize(), nil
 }
 
@@ -238,7 +253,7 @@ func getPubKeyUnsafe(device SECP256K1, path hd.BIP44Params) (types.PubKey, error
 	}
 
 	// re-serialize in the 33-byte compressed format
-	cmp, err := btcec.ParsePubKey(publicKey, btcec.S256())
+	cmp, err := btcec.ParsePubKey(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing public key: %v", err)
 	}
@@ -262,7 +277,7 @@ func getPubKeyAddrSafe(device SECP256K1, path hd.BIP44Params, hrp string) (types
 	}
 
 	// re-serialize in the 33-byte compressed format
-	cmp, err := btcec.ParsePubKey(publicKey, btcec.S256())
+	cmp, err := btcec.ParsePubKey(publicKey)
 	if err != nil {
 		return nil, "", fmt.Errorf("error parsing public key: %v", err)
 	}
